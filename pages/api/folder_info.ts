@@ -49,10 +49,11 @@ export default async function handler(
           `Retrieved ${changes?.length || 0} changes for folder ${folderId}`
         );
 
-        // Return 404 if no changes found
+        // Return empty changes array if no changes found
         if (!changes || changes.length === 0) {
-          return res.status(404).json({
-            message: "No changes found for this folder",
+          return res.status(200).json({
+            message: "No changes recorded yet for this folder",
+            changes: [],
             folderId,
           });
         }
@@ -62,7 +63,7 @@ export default async function handler(
       case "structure":
         // Get current folder structure
         const contents = await db.getFolderContents(folderId as string);
-        const structure = buildFolderStructure(contents);
+        const structure = buildFolderStructure(contents || []); // Pass empty array if contents is null
         return res.status(200).json({ structure });
 
       default:

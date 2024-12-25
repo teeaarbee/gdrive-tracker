@@ -42,11 +42,25 @@ export default async function handler(
     const folderId = await extractFolderId(folderLink);
     await db.initializeTables();
 
-    // Get folder details
+    // Get folder details and check if active
     const folder = await driveService.files.get({
       fileId: folderId,
       fields: "name",
     });
+
+    // Get tracked folder info
+    const trackedFolders = await db.getAllTrackedFolders();
+    const trackedFolder = trackedFolders.find(
+      (f: { google_folder_id: string }) => f.google_folder_id === folderId
+    );
+
+    if (trackedFolder && !trackedFolder.is_active) {
+      return res.status(400).json({
+        error: "Folder tracking is disabled",
+        message:
+          "Enable tracking for this folder to continue monitoring changes",
+      });
+    }
 
     const diffTracker = new DiffTracker(driveService);
     const currentContents = await diffTracker.getFolderContents(folderId);
@@ -93,6 +107,11 @@ export default async function handler(
     logger.info(
       `Folder tracking completed successfully with ${changes.length} changes detected`
     );
+
+    // If changes are detected, update the last_modified timestamp
+    if (changes.length > 0) {
+      await db.updateFolderModifiedTime(folderId);
+    }
 
     return res.status(200).json({
       message: "Folder tracking completed successfully",
