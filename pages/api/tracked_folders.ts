@@ -6,6 +6,16 @@ import {
   getDriveService,
 } from "../../lib/googleAuthClient";
 
+// Initialize database tables on startup
+(async () => {
+  try {
+    await db.initializeTables();
+    logger.info("Database tables initialized successfully");
+  } catch (error) {
+    logger.error("Failed to initialize database tables:", error);
+  }
+})();
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse

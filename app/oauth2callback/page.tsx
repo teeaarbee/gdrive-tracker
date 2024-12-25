@@ -1,29 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 export default function OAuth2Callback() {
   const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const code = searchParams?.get("code");
     if (code) {
-      // Send code to parent window
-      window.opener.postMessage(
-        {
-          type: "oauth-callback",
-          code,
-        },
-        window.location.origin
-      );
-      window.close();
+      // Redirect to main page with auth code
+      window.location.href = `/?code=${code}`;
     }
   }, [searchParams]);
 
-  return (
-    <div className="p-4">
-      <p>Authentication successful! You can close this window.</p>
-    </div>
-  );
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
+  return <div>Authenticating...</div>;
 }
