@@ -416,6 +416,39 @@ export default function DriveFolderTracker() {
     );
   };
 
+  // Add this helper function
+  const groupChangesByTime = (changes: FolderInfoChange[]) => {
+    const now = new Date();
+    const today = new Date(now.setHours(0, 0, 0, 0));
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const thisWeek = new Date(today);
+    thisWeek.setDate(thisWeek.getDate() - 7);
+    const thisMonth = new Date(today);
+    thisMonth.setMonth(thisMonth.getMonth() - 1);
+
+    return changes.reduce((groups, change) => {
+      const changeDate = new Date(change.created_at);
+
+      let period = "Older";
+      if (changeDate >= today) {
+        period = "Today";
+      } else if (changeDate >= yesterday) {
+        period = "Yesterday";
+      } else if (changeDate >= thisWeek) {
+        period = "This Week";
+      } else if (changeDate >= thisMonth) {
+        period = "This Month";
+      }
+
+      if (!groups[period]) {
+        groups[period] = [];
+      }
+      groups[period].push(change);
+      return groups;
+    }, {} as Record<string, FolderInfoChange[]>);
+  };
+
   // Update the folders tab content
   const FoldersTab = () => (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -502,15 +535,29 @@ export default function DriveFolderTracker() {
               )}
             </DialogTitle>
           </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto space-y-4">
+          <div className="max-h-[60vh] overflow-y-auto space-y-6">
             {folderChanges.changes.length === 0 ? (
               <p className="text-center text-muted-foreground">
                 No changes recorded for this folder
               </p>
             ) : (
-              folderChanges.changes.map((change) => (
-                <ChangesDisplay key={change.id} change={change} />
-              ))
+              Object.entries(groupChangesByTime(folderChanges.changes)).map(
+                ([period, changes]) => (
+                  <div key={period}>
+                    <h3 className="font-medium mb-3 text-muted-foreground flex items-center gap-2">
+                      {period}
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                        {changes.length}
+                      </span>
+                    </h3>
+                    <div className="space-y-4">
+                      {changes.map((change) => (
+                        <ChangesDisplay key={change.id} change={change} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              )
             )}
           </div>
         </DialogContent>
